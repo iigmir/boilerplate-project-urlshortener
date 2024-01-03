@@ -4,6 +4,7 @@ require("dotenv").config();
 const cors = require("cors");
 const express = require("express");
 const bodyParser = require("body-parser");
+const { GetUrlHostname, CheckDnsStatus } = require("./url-modules.js");
 // app
 const app = express();
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
@@ -21,7 +22,18 @@ app.get("/", function(req, res) {
 
 // Your first API endpoint
 app.post("/api/shorturl", urlencodedParser, function(req, res) {
-  res.json({ original_url: req.body.url });
+  const input_url = req.body.url;
+  const input_url_host = GetUrlHostname(input_url);
+  if( input_url_host == null ) {
+    res.json({ "error":"Invalid URL", input_url_host });
+    return false;
+  }
+  CheckDnsStatus( input_url_host ).then( (url_res) => {
+    res.json({ original_url: input_url });
+  }).catch( (url_err) => {
+    // {"error":"Invalid URL"}
+    res.json({ "error":"Invalid URL", url_err });
+  });
 });
 
 app.listen(port, function() {
